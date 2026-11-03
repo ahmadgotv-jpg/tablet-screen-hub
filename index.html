@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>Tablet Screen Hub</title>
+  <style>
+    :root{font-family:Tahoma,Arial,sans-serif;color:#eaf0f8;background:#0b1220}
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at 85% 0%,#1c3150 0,transparent 34%),#0b1220;min-height:100vh}
+    .wrap{max-width:1180px;margin:auto;padding:24px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px}
+    .brand{display:flex;align-items:center;gap:13px}
+    .logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#36c5f0,#536dfe);display:grid;place-items:center;font-size:23px}
+    h1{font-size:22px;margin:0}.sub{color:#9fb0c7;font-size:13px;margin-top:5px}
+    .badge{border:1px solid #2c405b;color:#b9cce3;border-radius:999px;padding:8px 12px;font-size:12px}
+    .panel{background:rgba(20,31,49,.92);border:1px solid #263851;border-radius:18px;padding:22px;box-shadow:0 16px 45px #0003}
+    .login{max-width:440px;margin:8vh auto}
+    label{display:block;color:#b9c8da;font-size:13px;margin:14px 0 7px}
+    input{width:100%;padding:13px 14px;border-radius:10px;border:1px solid #344963;background:#0d1828;color:#fff;font-size:15px;outline:none}
+    input:focus{border-color:#48bce8;box-shadow:0 0 0 3px #48bce822}
+    button{border:0;border-radius:10px;padding:12px 17px;background:#287fc5;color:white;font-weight:bold;cursor:pointer}
+    button:hover{filter:brightness(1.1)}button:disabled{opacity:.55;cursor:wait}
+    .primary{width:100%;margin-top:18px}
+    .muted{color:#9fb0c7;font-size:13px;line-height:1.7}
+    .error{color:#ff9d9d;margin-top:12px;font-size:13px;white-space:pre-wrap}
+    .hidden{display:none!important}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+    .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:20px}
+    .stat{background:#111e30;border:1px solid #263851;border-radius:14px;padding:16px}
+    .stat strong{font-size:25px;display:block;margin-top:8px}
+    .stat span{font-size:12px;color:#9fb0c7}
+    .section-title{font-size:17px;margin:0 0 15px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px}
+    .device{background:#111e30;border:1px solid #293d56;border-radius:13px;padding:15px}
+    .device-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .device-name{font-weight:bold;letter-spacing:.3px}
+    .status{font-size:11px;border-radius:999px;padding:5px 8px;background:#263348;color:#b9c8da}
+    .status.online{background:#123d34;color:#77e0bd}
+    .device small{display:block;color:#91a5bd;margin:12px 0}
+    .device button{width:100%;padding:9px;background:#263c58;color:#dcecff}
+    .tabs{display:flex;gap:9px;margin:20px 0}
+    .tab{background:#17263a;color:#b9c8da;border:1px solid #2a405c}
+    .tab.active{background:#287fc5;color:white}
+    .placeholder{border:1px dashed #3a506b;border-radius:13px;padding:22px;color:#a9bbd0;line-height:1.8}
+    footer{color:#6f849e;text-align:center;font-size:11px;margin:26px 0 8px}
+    @media(max-width:650px){.wrap{padding:15px}.stats{grid-template-columns:1fr 1fr}header{align-items:flex-start}.badge{display:none}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo">▦</div><div><h1>Tablet Screen Hub</h1><div class="sub">لوحة إدارة أجهزة المؤسسة ومشاركة الملفات</div></div></div>
+    <div class="badge">نسخة تجريبية أولى</div>
+  </header>
+
+  <section id="loginPanel" class="panel login">
+    <h2 style="margin:0 0 8px">تسجيل دخول الإدارة</h2>
+    <p class="muted">سجّل الدخول بالبريد الرسمي وكلمة المرور التي أنشأتها في Supabase.</p>
+    <form id="loginForm">
+      <label for="email">البريد الإلكتروني</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">كلمة المرور</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button id="loginBtn" class="primary" type="submit">دخول</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </section>
+
+  <main id="appPanel" class="hidden">
+    <div class="toolbar">
+      <div><h2 style="margin:0 0 5px">نظرة عامة</h2><div class="muted">حالة الأجهزة تتحدث تلقائياً عند وصول تغييرات من قاعدة البيانات.</div></div>
+      <button id="logoutBtn">تسجيل الخروج</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>إجمالي الأجهزة</span><strong id="totalCount">25</strong></div>
+      <div class="stat"><span>متصلة حسب قاعدة البيانات</span><strong id="onlineCount">0</strong></div>
+      <div class="stat"><span>غير متصلة / لم ترسل حالة</span><strong id="offlineCount">25</strong></div>
+    </div>
+    <div class="panel">
+      <div class="toolbar"><h3 class="section-title" style="margin:0">الأجهزة</h3><span id="refreshState" class="muted">جارٍ تحميل الأجهزة…</span></div>
+      <div id="deviceGrid" class="grid"></div>
+      <div id="deviceError" class="error"></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="screens">Screen Sharing</button>
+      <button class="tab" data-tab="files">File Sharing</button>
+    </div>
+    <section id="screensPanel" class="panel">
+      <h3 class="section-title">مشاركة الشاشات</h3>
+      <div class="placeholder">سيتم ربط أزرار مشاهدة الشاشة بآلية ScreenStream بعد اختبار طريقة فتح البث الرسمية لكل جهاز. حالياً هذه الواجهة تعرض سجل الأجهزة وحالتها فقط، ولا تبدأ البث تلقائياً.</div>
+    </section>
+    <section id="filesPanel" class="panel hidden">
+      <h3 class="section-title">مشاركة الملفات</h3>
+      <div class="placeholder">سيتم تفعيل رفع الملفات والتنزيل والروابط الخارجية في مرحلة مستقلة بعد إعداد حساب الموظفين وسياسات التخزين. لم يتم تفعيل رفع الملفات من هذه النسخة بعد.</div>
+    </section>
+  </main>
+  <footer>Tablet Screen Hub · لا تضع مفاتيح سرية أو كلمات مرور داخل ملفات GitHub العامة.</footer>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+  // ضع Project URL و Publishable Key من مشروع tablet-screen-hub فقط.
+  const SUPABASE_URL = 'https://scggzlllebqfjebjetki.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_jti4X8_6AUDT_nRaCWSChA_8P73KhFZ';
+
+  const loginPanel = document.getElementById('loginPanel');
+  const appPanel = document.getElementById('appPanel');
+  const loginError = document.getElementById('loginError');
+  const deviceError = document.getElementById('deviceError');
+  const loginBtn = document.getElementById('loginBtn');
+  let supabase;
+  let channel;
+
+  const configReady = !SUPABASE_URL.includes('PASTE_') && !SUPABASE_PUBLISHABLE_KEY.includes('PASTE_');
+  if (configReady) {
+    supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    restoreSession();
+  } else {
+    loginError.textContent = 'أكمل إعداد Project URL و Publishable Key داخل الملف أولاً.';
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!supabase) return;
+    loginBtn.disabled = true;
+    loginError.textContent = '';
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    loginBtn.disabled = false;
+    if (error) {
+      loginError.textContent = 'تعذر تسجيل الدخول: ' + error.message;
+      return;
+    }
+    await showDashboard();
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    if (channel) await supabase.removeChannel(channel);
+    await supabase.auth.signOut();
+    appPanel.classList.add('hidden');
+    loginPanel.classList.remove('hidden');
+  });
+
+  async function restoreSession() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) await showDashboard();
+  }
+
+  async function showDashboard() {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      loginError.textContent = 'تعذر التحقق من الجلسة. سجّل الدخول مجدداً.';
+      return;
+    }
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles').select('role').eq('id', userData.user.id).maybeSingle();
+    if (profileError || !profile || profile.role !== 'admin') {
+      await supabase.auth.signOut();
+      loginError.textContent = 'هذا الحساب لا يملك صلاحية الإدارة.';
+      return;
+    }
+    loginPanel.classList.add('hidden');
+    appPanel.classList.remove('hidden');
+    await loadDevices();
+    subscribeDevices();
+  }
+
+  async function loadDevices() {
+    deviceError.textContent = '';
+    document.getElementById('refreshState').textContent = 'جارٍ تحديث البيانات…';
+    const { data, error } = await supabase.from('devices')
+      .select('device_name,is_online,stream_enabled,last_seen')
+      .order('device_name');
+    if (error) {
+      deviceError.textContent = 'تعذر تحميل الأجهزة: ' + error.message;
+      document.getElementById('refreshState').textContent = 'فشل التحديث';
+      return;
+    }
+    renderDevices(data || []);
+    document.getElementById('refreshState').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar');
+  }
+
+  function renderDevices(devices) {
+    const online = devices.filter(d => d.is_online).length;
+    document.getElementById('totalCount').textContent = devices.length;
+    document.getElementById('onlineCount').textContent = online;
+    document.getElementById('offlineCount').textContent = devices.length - online;
+    const grid = document.getElementById('deviceGrid');
+    grid.innerHTML = '';
+    devices.forEach(device => {
+      const card = document.createElement('article');
+      card.className = 'device';
+      const top = document.createElement('div'); top.className = 'device-top';
+      const name = document.createElement('span'); name.className = 'device-name'; name.textContent = device.device_name;
+      const status = document.createElement('span'); status.className = 'status' + (device.is_online ? ' online' : '');
+      status.textContent = device.is_online ? 'متصل' : 'غير متصل';
+      top.append(name, status);
+      const detail = document.createElement('small');
+      detail.textContent = device.last_seen ? 'آخر ظهور: ' + new Date(device.last_seen).toLocaleString('ar') : 'لم يرسل الجهاز حالة اتصال بعد';
+      const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = device.stream_enabled ? 'البث معلَن أنه مفعّل' : 'مشاهدة الشاشة — لاحقاً';
+      btn.disabled = true;
+      card.append(top, detail, btn); grid.append(card);
+    });
+  }
+
+  function subscribeDevices() {
+    if (channel) supabase.removeChannel(channel);
+    channel = supabase.channel('tablet-screen-hub-devices')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => loadDevices())
+      .subscribe();
+  }
+
+  document.querySelectorAll('.tab').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === button));
+      document.getElementById('screensPanel').classList.toggle('hidden', button.dataset.tab !== 'screens');
+      document.getElementById('filesPanel').classList.toggle('hidden', button.dataset.tab !== 'files');
+    });
+  });
+</script>
+</body>
+</html>
