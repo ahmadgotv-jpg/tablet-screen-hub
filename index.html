@@ -550,18 +550,24 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
 
         });
 
-        detail.textContent +=
-          ' | عنوان البث: ' + ip + ':' + port;
+// IP hidden for clean UI
 
       } else {
 
-        btn.textContent = 'لم تتم إضافة عنوان IP';
+        btn.textContent = 'البث غير متاح حالياً';
         btn.disabled = true;
         btn.classList.add('no-ip');
 
       }
 
       card.append(top, detail, btn);
+
+      const activeFilter = document.querySelector(".filter-btn.active")?.dataset.filter || "all";
+      if (activeFilter === "online" && !device.is_online) {
+        card.classList.add("hidden");
+      } else if (activeFilter === "offline" && device.is_online) {
+        card.classList.add("hidden");
+      }
 
       grid.append(card);
 
@@ -585,9 +591,18 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
           schema: 'public',
           table: 'devices'
         },
-        () => loadDevices()
+        () => {
+          loadDevices();
+        }
       )
-      .subscribe();
+      .subscribe((status) => {
+        const rs = document.getElementById('refreshState');
+        if (status === 'SUBSCRIBED') {
+          if (rs) rs.innerHTML = '<span style="color:#0f9d6b;font-weight:600">● متصل لحظياً (Realtime)</span>';
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          if (rs) rs.innerHTML = '<span style="color:#e53e3e">⚠ انقطع البث اللحظي، جارٍ إعادة المحاولة…</span>';
+        }
+      });
 
   }
 
