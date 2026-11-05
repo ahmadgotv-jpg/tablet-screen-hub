@@ -117,6 +117,20 @@
     footer{color:#8291a2;text-align:center;font-size:13px;margin:36px 0 6px}
     footer b{color:var(--green)}
 
+    
+    /* --- OneDrive & Share Tabs Styles --- */
+    .share-tabs{display:flex;gap:10px;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+    .share-tab-btn{background:#fff;border:1px solid var(--line);padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);transition:.2s;display:inline-flex;align-items:center;gap:8px}
+    .share-tab-btn:hover{color:var(--ink);border-color:rgba(15,157,107,.4)}
+    .share-tab-btn.active{background:linear-gradient(120deg,rgba(15,157,107,.12),rgba(47,140,255,.12));color:#0b6b4a;border-color:rgba(15,157,107,.4);box-shadow:0 2px 8px rgba(15,157,107,.08)}
+    .onedrive-box{border:1.5px solid #b4d6fa;background:linear-gradient(135deg,rgba(0,120,212,.03),rgba(47,140,255,.07));border-radius:18px;padding:22px;margin-bottom:20px;box-shadow:0 4px 16px -6px rgba(0,120,212,.1)}
+    .onedrive-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+    .onedrive-icon-badge{width:50px;height:50px;border-radius:14px;background:#e8f2fc;display:grid;place-items:center;font-size:26px;color:#0078d4;box-shadow:0 6px 14px -4px rgba(0,120,212,.3)}
+    .onedrive-form-grid{display:grid;gap:14px}
+    .onedrive-input{width:100%;padding:11px 15px;border:1px solid var(--line);border-radius:12px;font-family:inherit;font-size:14px;background:#fff;transition:.2s}
+    .onedrive-input:focus{outline:none;border-color:#0078d4;box-shadow:0 0 0 3px rgba(0,120,212,.15)}
+    .badge-onedrive{background:#e8f2fc;color:#0078d4;border:1px solid #b4d6fa;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700}
+
     .upload-box{border:2px dashed rgba(15,157,107,.35);background:linear-gradient(120deg,rgba(34,201,147,.05),rgba(47,140,255,.05));border-radius:18px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transition:.25s;margin-bottom:20px}
     .upload-box.dragover{border-color:var(--green);background:rgba(34,201,147,.12);transform:scale(1.01)}
     .upload-icon{font-size:36px;width:64px;height:64px;border-radius:18px;background:#fff;display:grid;place-items:center;box-shadow:0 8px 20px -8px rgba(15,157,107,.4)}
@@ -272,6 +286,37 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
           <div class="muted">رفع الوثائق فورياً لتظهر على أجهزة الأعضاء اللوحية (تبقى صالحة لمدة 7 أيام)</div>
         </div>
         <button id="refreshFilesBtn" type="button" style="min-height:40px;padding:8px 16px;font-size:13px">تحديث الملفات ⟳</button>
+      </div>
+
+      <div class="share-tabs">
+        <button type="button" id="tabDirectUploadBtn" class="share-tab-btn active">📁 رفع ملف مباشر (حتى 50MB)</button>
+        <button type="button" id="tabOneDriveBtn" class="share-tab-btn">☁️ مشاركة عبر OneDrive / سحابة الجامعة</button>
+      </div>
+
+      <div class="onedrive-box hidden" id="onedriveBox">
+        <div class="onedrive-header">
+          <div class="onedrive-icon-badge">☁️</div>
+          <div>
+            <b style="font-size:15px;color:#0f1f2e">مشاركة وثيقة من Microsoft OneDrive / SharePoint</b>
+            <div class="muted" style="font-size:13px">ضع رابط المشاركة المنسوخ من حساب الجامعة المكتبي أو مجلد المجلس</div>
+          </div>
+        </div>
+        <div class="onedrive-form-grid">
+          <div>
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">عنوان أو اسم الوثيقة</label>
+            <input type="text" id="onedriveFileName" class="onedrive-input" placeholder="مثال: محضر اجتماع مجلس العمداء رقم (4).docx">
+          </div>
+          <div>
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px">رابط المشاركة (OneDrive / SharePoint / رابط مباشر)</label>
+            <input type="url" id="onedriveFileUrl" class="onedrive-input" placeholder="https://aabu-my.sharepoint.com/:w:/g/personal/... أو 1drv.ms" dir="ltr">
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:4px">
+            <span class="muted" style="font-size:12px">💡 تأكد من اختيار «أي شخص لديه الرابط يمكنه العرض» داخل خيارات المشاركة في OneDrive</span>
+            <button type="button" id="submitOneDriveBtn" style="min-height:42px;padding:10px 24px;background:linear-gradient(120deg,#0078d4,#00a4ef);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 8px 18px -6px rgba(0,120,212,.4)">مشاركة الوثيقة الآن ☁️</button>
+          </div>
+          <div id="onedriveError" class="error"></div>
+          <div id="onedriveSuccess" style="color:var(--green);font-size:13px;font-weight:600"></div>
+        </div>
       </div>
 
       <div class="upload-box" id="uploadDropzone">
@@ -610,6 +655,104 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
 
   // ===================== إدارة مشاركة الملفات عبر Edge Function =====================
   const FUNCTION_NAME = "public-file-sharing";
+
+  // --- OneDrive Sharing Controls ---
+  const tabDirectUploadBtn = document.getElementById("tabDirectUploadBtn");
+  const tabOneDriveBtn = document.getElementById("tabOneDriveBtn");
+  const onedriveBox = document.getElementById("onedriveBox");
+  const onedriveFileName = document.getElementById("onedriveFileName");
+  const onedriveFileUrl = document.getElementById("onedriveFileUrl");
+  const submitOneDriveBtn = document.getElementById("submitOneDriveBtn");
+  const onedriveError = document.getElementById("onedriveError");
+  const onedriveSuccess = document.getElementById("onedriveSuccess");
+
+  tabDirectUploadBtn?.addEventListener("click", () => {
+    tabDirectUploadBtn.classList.add("active");
+    tabOneDriveBtn.classList.remove("active");
+    uploadDropzone?.classList.remove("hidden");
+    onedriveBox?.classList.add("hidden");
+  });
+
+  tabOneDriveBtn?.addEventListener("click", () => {
+    tabOneDriveBtn.classList.add("active");
+    tabDirectUploadBtn.classList.remove("active");
+    uploadDropzone?.classList.add("hidden");
+    onedriveBox?.classList.remove("hidden");
+  });
+
+  submitOneDriveBtn?.addEventListener("click", async () => {
+    if (!onedriveFileUrl || !onedriveFileName) return;
+    onedriveError.textContent = "";
+    onedriveSuccess.textContent = "";
+
+    const rawUrl = onedriveFileUrl.value.trim();
+    let fileName = onedriveFileName.value.trim();
+
+    if (!rawUrl) {
+      onedriveError.textContent = "يرجى إدخال رابط المشاركة من OneDrive.";
+      return;
+    }
+
+    if (!/^https?:\/\//i.test(rawUrl)) {
+      onedriveError.textContent = "الرابط يجب أن يبدأ بـ https:// أو http://";
+      return;
+    }
+
+    if (!fileName) {
+      fileName = "وثيقة سحابية (OneDrive)";
+    }
+
+    submitOneDriveBtn.disabled = true;
+    submitOneDriveBtn.textContent = "جارٍ حفظ الرابط…";
+
+    try {
+      let saved = false;
+
+      // محاولة عبر Edge Function أولاً
+      try {
+        const { data, error } = await supabase.functions.invoke(FUNCTION_NAME, {
+          body: {
+            action: "add-external",
+            fileName: fileName,
+            url: rawUrl,
+            source: "external"
+          }
+        });
+        if (!error && data?.success) {
+          saved = true;
+        }
+      } catch (_) {}
+
+      // إذا لم تكن مدعومة في Edge Function، إدراج مباشر في جدول shared_files
+      if (!saved) {
+        const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+        const { error: dbErr } = await supabase.from("shared_files").insert({
+          file_name: fileName,
+          storage_path: rawUrl,
+          source: "external",
+          expires_at: expiresAt
+        });
+        if (dbErr) throw dbErr;
+      }
+
+      onedriveSuccess.textContent = "تمت مشاركة وثيقة OneDrive بنجاح!";
+      onedriveFileName.value = "";
+      onedriveFileUrl.value = "";
+
+      await loadFilesViaEdgeFunction();
+
+      setTimeout(() => {
+        if (onedriveSuccess) onedriveSuccess.textContent = "";
+      }, 4000);
+
+    } catch (err) {
+      onedriveError.textContent = "تعذر مشاركة الرابط: " + (err.message || err);
+    } finally {
+      submitOneDriveBtn.disabled = false;
+      submitOneDriveBtn.textContent = "مشاركة الوثيقة الآن ☁️";
+    }
+  });
+
   const BUCKET_NAME = "temporary-shared-files";
 
   const fileInput = document.getElementById("fileInput");
@@ -734,10 +877,17 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
 
         const ext = (f.file_name || "").split(".").pop().toLowerCase();
         let icon = "📄";
-        if (["pdf"].includes(ext)) icon = "📕";
-        else if (["doc", "docx"].includes(ext)) icon = "📘";
-        else if (["ppt", "pptx"].includes(ext)) icon = "📙";
-        else if (["jpg", "png", "jpeg"].includes(ext)) icon = "🖼️";
+        if (f.source === "external") {
+          icon = "☁️";
+        } else if (["pdf"].includes(ext)) {
+          icon = "📕";
+        } else if (["doc", "docx"].includes(ext)) {
+          icon = "📘";
+        } else if (["ppt", "pptx"].includes(ext)) {
+          icon = "📙";
+        } else if (["jpg", "png", "jpeg"].includes(ext)) {
+          icon = "🖼️";
+        }
 
         const dateStr = f.created_at ? new Date(f.created_at).toLocaleDateString("ar", {month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"}) : "";
 
@@ -747,7 +897,7 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
             <div class="file-meta">
               <span class="file-title" title="${f.file_name}">${f.file_name}</span>
               <div class="file-info">
-                <span>وثيقة رسمية</span>
+                ${f.source === 'external' ? '<span class="badge-onedrive">☁️ OneDrive / سحابي</span>' : '<span>وثيقة مخزنة</span>'}
                 <span>• ${dateStr}</span>
               </div>
             </div>
