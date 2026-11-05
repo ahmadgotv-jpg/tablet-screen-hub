@@ -679,7 +679,8 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
       const { data: finalData, error: finalError } = await supabase.functions.invoke(FUNCTION_NAME, {
         body: {
           action: "finalize-upload",
-          path: prepData.path
+          path: prepData.path,
+          fileName: file.name
         }
       });
 
