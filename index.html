@@ -92,14 +92,27 @@
     .status::before{content:"";width:8px;height:8px;border-radius:50%;background:#a8b4c2}
     .status.online{background:#e6faf2;color:#0b8a5d}
     .status.online::before{background:var(--green2);animation:pulse 1.6s infinite}
+    .status.offline{background:#fff0f2;color:#d6334d}
+    .status.offline::before{background:#ff5d73}
     .device small{display:block;color:var(--muted);margin:9px 0;line-height:1.6;font-size:12px}
     .device button{width:100%}
     .device button.no-ip{background:#f1f4f8;color:#8a97a6;box-shadow:none}
 
     .tabs{display:inline-flex;gap:6px;margin:28px 0 18px;padding:6px;border-radius:18px;background:rgba(255,255,255,.75);border:1px solid #fff;box-shadow:var(--shadow);backdrop-filter:blur(14px)}
-    .tab{background:transparent;color:var(--muted);box-shadow:none;min-width:160px}
+    .tab{background:transparent;color:var(--muted);box-shadow:none;min-width:160px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
     .tab:hover{transform:none;box-shadow:none;color:var(--ink)}
     .tab.active{background:var(--grad);color:#fff;box-shadow:0 10px 22px -10px rgba(15,157,107,.6)}
+    .tab-indicators{display:inline-flex;align-items:center;gap:6px;margin-right:8px}
+    .tab-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;display:inline-flex;align-items:center;gap:4px;line-height:1.4}
+    .tab-badge.online{background:rgba(15,157,107,.15);color:#0b6b4a}
+    .tab-badge.offline{background:rgba(255,93,115,.15);color:#c82333}
+    .tab.active .tab-badge.online{background:rgba(255,255,255,.28);color:#fff}
+    .tab.active .tab-badge.offline{background:rgba(255,255,255,.22);color:#ffe2e8}
+
+    .filter-btn{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--muted);box-shadow:none;min-height:32px;transition:.2s}
+    .filter-btn:hover{background:#f8fafc;color:var(--ink);transform:none}
+    .filter-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
     .placeholder{border-radius:16px;padding:24px;color:#33475b;line-height:2;font-size:15px;background:linear-gradient(120deg,rgba(34,201,147,.08),rgba(47,140,255,.08));border:1.5px dashed rgba(15,157,107,.3)}
     footer{color:#8291a2;text-align:center;font-size:13px;margin:36px 0 6px}
     footer b{color:var(--green)}
@@ -213,7 +226,14 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
 
     <div class="panel">
       <div class="toolbar">
-        <h3 class="section-title" style="margin:0">الأجهزة</h3>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <h3 class="section-title" style="margin:0">الأجهزة</h3>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="filter-btn active" data-filter="all">الكل</button>
+            <button type="button" class="filter-btn" data-filter="online">المتصلة 🟢</button>
+            <button type="button" class="filter-btn" data-filter="offline">غير المتصلة 🔴</button>
+          </div>
+        </div>
         <span id="refreshState" class="muted">جارٍ تحميل الأجهزة…</span>
       </div>
 
@@ -222,8 +242,16 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
     </div>
 
     <div class="tabs">
-      <button class="tab active" data-tab="screens">Screen Sharing</button>
-      <button class="tab" data-tab="files">File Sharing</button>
+      <button class="tab active" data-tab="screens">
+        <span>Screen Sharing</span>
+        <span class="tab-indicators">
+          <span class="tab-badge online" title="أجهزة متصلة">🟢 <span id="tabOnlineCount">0</span></span>
+          <span class="tab-badge offline" title="أجهزة غير متصلة">🔴 <span id="tabOfflineCount">25</span></span>
+        </span>
+      </button>
+      <button class="tab" data-tab="files">
+        <span>File Sharing</span>
+      </button>
     </div>
 
     <section id="screensPanel" class="panel">
@@ -444,15 +472,17 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
   function renderDevices(devices) {
 
     const online = devices.filter(d => d.is_online).length;
+    const offline = devices.length - online;
 
-    document.getElementById('totalCount').textContent =
-      devices.length;
+    document.getElementById('totalCount').textContent = devices.length;
+    document.getElementById('onlineCount').textContent = online;
+    document.getElementById('offlineCount').textContent = offline;
 
-    document.getElementById('onlineCount').textContent =
-      online;
-
-    document.getElementById('offlineCount').textContent =
-      devices.length - online;
+    // تحديث الأرقام الملونة بجانب التاب
+    const tabOn = document.getElementById('tabOnlineCount');
+    if (tabOn) tabOn.textContent = online;
+    const tabOff = document.getElementById('tabOfflineCount');
+    if (tabOff) tabOff.textContent = offline;
 
     const grid = document.getElementById('deviceGrid');
 
@@ -472,10 +502,12 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
 
       const status = document.createElement('span');
       status.className =
-        'status' + (device.is_online ? ' online' : '');
+        'status ' + (device.is_online ? 'online' : 'offline');
 
       status.textContent =
         device.is_online ? 'متصل' : 'غير متصل';
+
+      card.dataset.online = device.is_online ? 'true' : 'false';
 
       top.append(name, status);
 
@@ -531,6 +563,13 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
 
       card.append(top, detail, btn);
 
+      const activeFilter = document.querySelector(".filter-btn.active")?.dataset.filter || "all";
+      if (activeFilter === "online" && !device.is_online) {
+        card.classList.add("hidden");
+      } else if (activeFilter === "offline" && device.is_online) {
+        card.classList.add("hidden");
+      }
+
       grid.append(card);
 
     });
@@ -553,9 +592,18 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
           schema: 'public',
           table: 'devices'
         },
-        () => loadDevices()
+        () => {
+          loadDevices();
+        }
       )
-      .subscribe();
+      .subscribe((status) => {
+        const rs = document.getElementById('refreshState');
+        if (status === 'SUBSCRIBED') {
+          if (rs) rs.innerHTML = '<span style="color:#0f9d6b;font-weight:600">● متصل لحظياً (Realtime)</span>';
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          if (rs) rs.innerHTML = '<span style="color:#e53e3e">⚠ انقطع البث اللحظي، جارٍ إعادة المحاولة…</span>';
+        }
+      });
 
   }
 
@@ -749,6 +797,26 @@ h1{animation:namepulse 2.4s ease-in-out infinite !important;background-position:
       if (button.dataset.tab === 'files') {
         loadFilesViaEdgeFunction();
       }
+    });
+  });
+
+  // فلترة عرض الأجهزة (الكل / المتصلة فقط / غير المتصلة فقط)
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+
+      document.querySelectorAll('#deviceGrid .device').forEach(card => {
+        const isOnline = card.dataset.online === 'true';
+        if (filter === 'all') {
+          card.classList.remove('hidden');
+        } else if (filter === 'online') {
+          card.classList.toggle('hidden', !isOnline);
+        } else if (filter === 'offline') {
+          card.classList.toggle('hidden', isOnline);
+        }
+      });
     });
   });
 
