@@ -2812,6 +2812,11 @@
     }
   }
 
+  /* ضبط حشو حقول الإدخال بعد إلغاء زر إظهار كلمة المرور */
+  .input-with-icon input {
+    padding-right: 44px !important;
+    padding-left: 16px !important;
+  }
 </style>
 </head>
 <body>
@@ -2912,7 +2917,6 @@
           <div class="input-with-icon">
             <span class="input-icon">🔒</span>
             <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
-            <button type="button" id="togglePasswordBtn" class="pwd-toggle-btn" title="إظهار/إخفاء كلمة المرور">👁️</button>
           </div>
         </div>
 
@@ -3327,6 +3331,14 @@
     appPanel.classList.remove('hidden');
 
     await loadDevices();
+
+  // فحص دوري لنبضات الأجهزة كل 30 ثانية لتحديث الحالات تلقائياً عند انطفاء الأجهزة أو تشغيلها
+  setInterval(() => {
+    if (session && !document.hidden) {
+      loadDevices();
+    }
+  }, 30000);
+
     subscribeDevices();
     loadFilesViaEdgeFunction();
 
@@ -3419,63 +3431,73 @@
   // مؤقتات البث المباشر لترشيد حزم الشبكة أثناء الكتابة السريعة (Debounce)
   const broadcastTimers = {};
 
-  // تقييم حالة الاتصال الواقعية للجهاز (استناداً إلى نبضات الاتصال الفعلية)
-  function evaluateDeviceStatus(device) {
-    // 1. تقييم صريح لحالة الاتصال الحقيقية من قاعدة البيانات
-    if (device.is_online === true) {
-      const lastSeenText = device.last_seen 
-        ? 'متصل • آخر نشاط: ' + formatRelativeTime(device.last_seen)
-        : 'متصل ومتاح للبث';
-      return {
-        isOnline: true,
-        label: 'متصل',
-        cssClass: 'online',
-        lastSeenText: lastSeenText
-      };
+  // دالة تحويل وضبط توقيت الأجهزة بدقة مع مراعاة المناطق الزمنية (UTC vs Local)
+  function parseDeviceTimestamp(val) {
+    if (!val) return null;
+    try {
+      let str = String(val).trim();
+      if (!str) return null;
+      // إذا كان التاريخ بدون منطقة زمنية (Postgres raw timestamp) نعتبره بتوقيت UTC
+      if (!str.endsWith('Z') && !str.includes('+') && !/-\d\d:\d\d$/.test(str)) {
+        str = str.replace(' ', 'T') + 'Z';
+      }
+      const d = new Date(str);
+      return isNaN(d.getTime()) ? null : d;
+    } catch (e) {
+      return null;
     }
+  }
 
+  // تقييم حالة الاتصال الواقعية للجهاز (استناداً إلى نبضات الاتصال الحقيقية والمهلة الزمنية)
+  function evaluateDeviceStatus(device) {
+    const lastSeenDate = parseDeviceTimestamp(device.last_seen);
+    const hasTimestamp = lastSeenDate !== null;
+    
+    // حساب الفارق الزمني بالدقائق منذ آخر إشارة نشاط
+    const diffMinutes = hasTimestamp ? (Date.now() - lastSeenDate.getTime()) / (1000 * 60) : Infinity;
+
+    // مهلة النبض المعتمدة لاعتبار الجهاز متصلاً فعلياً (5 دقائق)
+    const HEARTBEAT_WINDOW_MINUTES = 5;
+
+    // 1. إذا كان الجهاز مسجلاً كغير متصل صراحةً
     if (device.is_online === false) {
-      const lastSeenText = device.last_seen 
-        ? 'غير متصل • آخر نشاط: ' + formatRelativeTime(device.last_seen)
-        : 'مطفأ (غير متصل)';
       return {
         isOnline: false,
         label: 'غير متصل',
         cssClass: 'offline',
-        lastSeenText: lastSeenText
+        lastSeenText: hasTimestamp 
+          ? 'مطفأ • آخر اتصال: ' + formatRelativeTime(device.last_seen)
+          : 'مطفأ (غير متصل)'
       };
     }
 
-    // 2. في حال كانت is_online غير محددة (null/undefined):
-    if (device.stream_enabled) {
-      return {
-        isOnline: true,
-        label: 'متصل',
-        cssClass: 'online',
-        lastSeenText: 'بث الشاشة مفعّل'
-      };
-    }
-
-    if (device.last_seen) {
-      const lastSeenMs = new Date(device.last_seen).getTime();
-      if (!isNaN(lastSeenMs)) {
-        const diffMinutes = (Date.now() - lastSeenMs) / (1000 * 60);
-        if (diffMinutes <= 30) {
-          return {
-            isOnline: true,
-            label: 'متصل',
-            cssClass: 'online',
-            lastSeenText: 'نشط منذ ' + formatMinutesAgo(diffMinutes)
-          };
-        }
+    // 2. إذا كان للجهاز توقيت آخر اتصال: نتحقق هل هو حديث فعلاً (خلال آخر 5 دقائق)
+    // إذا انقضت أكثر من 5 دقائق، فالجهاز مطفأ أو انقطع اتصاله حتماً
+    if (hasTimestamp) {
+      if (diffMinutes <= HEARTBEAT_WINDOW_MINUTES && diffMinutes >= -1) {
+        return {
+          isOnline: true,
+          label: 'متصل',
+          cssClass: 'online',
+          lastSeenText: 'متصل • نشط الآن'
+        };
+      } else {
+        return {
+          isOnline: false,
+          label: 'غير متصل',
+          cssClass: 'offline',
+          lastSeenText: 'مطفأ • انقطع منذ ' + formatMinutesAgo(diffMinutes)
+        };
       }
     }
 
+    // 3. في حال عدم وجود أي توقيت لنشاط الجهاز (last_seen فارغ):
+    // لا يجوز اعتبار الجهاز متصلاً دون إثبات نبض حي
     return {
       isOnline: false,
       label: 'غير متصل',
       cssClass: 'offline',
-      lastSeenText: device.last_seen ? 'آخر اتصال: ' + formatRelativeTime(device.last_seen) : 'لم يسجل نشاطاً بعد'
+      lastSeenText: 'مطفأ (لم يرسل نبض اتصال بعد)'
     };
   }
 
